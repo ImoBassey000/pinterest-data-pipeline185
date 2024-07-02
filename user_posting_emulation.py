@@ -30,8 +30,7 @@ class AWSDBConnector:
         engine = sqlalchemy.create_engine(f"mysql+pymysql://{db_creds['USER']}:{db_creds['PASSWORD']}@{db_creds['HOST']}:{db_creds['PORT']}/{db_creds['DATABASE']}?charset=utf8mb4")
         return engine
 
-
-new_connector = AWSDBConnector()
+new_connector = AWSDBConnector(config_dir=config_dir)
 
 
 def run_infinite_post_data_loop():
@@ -68,5 +67,4 @@ def run_infinite_post_data_loop():
 if __name__ == "__main__":
     run_infinite_post_data_loop()
     print('Working')
-    
     
