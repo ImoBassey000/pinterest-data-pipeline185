@@ -36,10 +36,28 @@ def json_serializer(obj):
         return obj.isoformat()
     raise TypeError(f"Type {type(obj)} not serializable")
 
-def send_data_to_kafka(api_url, topic, data):
+def send_data_to_pin_topic(PIN_TOPIC, topic, data):
     headers = {'Content-Type': 'application/json'}
     payload = json.dumps({"topic": topic, "data": data}, default=json_serializer)
-    response = requests.post(api_url, headers=headers, data=payload)
+    response = requests.post(PIN_TOPIC, headers=headers, data=payload)
+    if response.status_code != 200:
+        print(f"Failed to send data to {topic}. Status code: {response.status_code}")
+    else:
+        print(f"Successfully sent data to {topic}")
+
+def send_data_to_geo_topic(GEO_TOPIC, topic, data):
+    headers = {'Content-Type': 'application/json'}
+    payload = json.dumps({"topic": topic, "data": data}, default=json_serializer)
+    response = requests.post(GEO_TOPIC, headers=headers, data=payload)
+    if response.status_code != 200:
+        print(f"Failed to send data to {topic}. Status code: {response.status_code}")
+    else:
+        print(f"Successfully sent data to {topic}")
+
+def send_data_to_user_topic(USER_TOPIC, topic, data):
+    headers = {'Content-Type': 'application/json'}
+    payload = json.dumps({"topic": topic, "data": data}, default=json_serializer)
+    response = requests.post(USER_TOPIC, headers=headers, data=payload)
     if response.status_code != 200:
         print(f"Failed to send data to {topic}. Status code: {response.status_code}")
     else:
@@ -50,6 +68,9 @@ def run_infinite_post_data_loop():
     db_creds = new_connector.read_my_db_creds()
     user_id = db_creds['UserId']
     api_url = db_creds['API_Invoke_URL']
+    pin_url = db_creds['PIN_TOPIC']
+    geo_url = db_creds['GEO_TOPIC']
+    user_url = db_creds['USER_TOPIC']
 
     while True:
         sleep(random.randrange(0, 2))
@@ -62,19 +83,19 @@ def run_infinite_post_data_loop():
             pin_selected_row = connection.execute(pin_string)
             for row in pin_selected_row:
                 pin_result = dict(row._mapping)
-                send_data_to_kafka(api_url, f"{user_id}.pin", pin_result)
+                send_data_to_pin_topic(pin_url, f"{user_id}.pin", pin_result)
 
             geo_string = text(f"SELECT * FROM geolocation_data LIMIT {random_row}, 1")
             geo_selected_row = connection.execute(geo_string)
             for row in geo_selected_row:
                 geo_result = dict(row._mapping)
-                send_data_to_kafka(api_url, f"{user_id}.geo", geo_result)
+                send_data_to_geo_topic(geo_url, f"{user_id}.geo", geo_result)
 
             user_string = text(f"SELECT * FROM user_data LIMIT {random_row}, 1")
             user_selected_row = connection.execute(user_string)
             for row in user_selected_row:
                 user_result = dict(row._mapping)
-                send_data_to_kafka(api_url, f"{user_id}.user", user_result)
+                send_data_to_user_topic(user_url, f"{user_id}.user", user_result)
 
             print(pin_result)
             print(geo_result)
