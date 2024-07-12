@@ -29,10 +29,6 @@ class AWSDBConnector:
         )
         return engine
 
-def json_serializer(obj):
-    if isinstance(obj, datetime):
-        return obj.isoformat()
-    raise TypeError(f"Type {type(obj)} not serializable")
 
 def send_data_to_topic(api_url, topic, data):
     headers = {'Content-Type': 'application/vnd.kafka.json.v2+json'}
@@ -42,7 +38,7 @@ def send_data_to_topic(api_url, topic, data):
                 "value": data
             }
         ]
-    }, default=json_serializer)
+    }, default=str)
     response = requests.request("POST", api_url, headers=headers, data=payload)
     if response.status_code != 200:
         print(f"Failed to send data to {topic}. Status code: {response.status_code}")
