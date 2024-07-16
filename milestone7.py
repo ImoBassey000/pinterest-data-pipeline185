@@ -170,10 +170,62 @@ from pyspark.sql import functions as F
 df_user = df_user.withColumn("post_year", F.year("date_joined"))
 
 #  Filter the DataFrame to include only the users who joined between 2015 and 2020
-df_filtered = df_user.filter((F.col("post_year") >= 2015) & (F.col("post_year") <= 2020))
+df_filtered_2015_2020 = df_user.filter((F.col("post_year") >= 2015) & (F.col("post_year") <= 2020))
 
 #  Group by year and count the number of users
 df_users_joined = df_filtered.groupBy("post_year").count().withColumnRenamed("count", "number_users_joined")
 
 df_users_joined.show()
+
+#Task 10
+from pyspark.sql import functions as F
+
+# Join df_filtered with df_pin on user_name
+df_filter_joined = df_filtered_2015_2020.join(df_pin, df_filtered_2015_2020.user_name == df_pin.poster_name, 'inner')
+
+#  Calculate the median follower count
+df_median_follower_count2 = df_filter_joined.groupBy("post_year").agg(
+    F.expr('percentile_approx(follower_count, 0.5)').alias('median_follower_count')
+)
+
+df_median_follower_count2.show()
+
+#Task 11
+
+from pyspark.sql import functions as F
+
+# Step 1: Extract the year from date_joined
+df_user = df_user.withColumn("post_year", F.year("date_joined"))
+
+# Step 2: Create an age_group column
+df_user = df_user.withColumn(
+    "age_group",
+    F.when(F.col("age") <= 24, "18-24")
+    .when((F.col("age") > 24) & (F.col("age") <= 35), "25-35")
+    .when((F.col("age") > 35) & (F.col("age") <= 50), "36-50")
+    .otherwise("+50")
+)
+
+# Step 3: Join df_user with df_pin on the user_name/poster_name column
+df_combined = df_user.join(df_pin, df_user.user_name == df_pin.poster_name, "inner")
+
+# Select the necessary columns
+df_combined = df_combined.select(
+    df_user.age_group,
+    df_user.post_year,
+    df_pin.follower_count
+)
+
+# Step 4: Filter users who joined between 2015 and 2020
+df_filtered = df_combined.filter((F.col("post_year") >= 2015) & (F.col("post_year") <= 2020))
+
+# Step 5: Group by age_group and post_year to calculate the median follower count
+result = df_filtered.groupBy("age_group", "post_year").agg(
+    F.expr('percentile_approx(follower_count, 0.5)').alias('median_follower_count')
+)
+
+result.show()
+
+
+
 
