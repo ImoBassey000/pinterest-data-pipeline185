@@ -39,10 +39,10 @@ def send_data_to_kinesis(api_url, stream_name, data):
     headers = {'Content-Type': 'application/json'}
     payload = json.dumps({
         "StreamName": stream_name,
-        "Data": json.dumps(data, cls=DateTimeEncoder),
+        "Data": data,
         "PartitionKey": "partition_key"
-    })
-    response = requests.request("PUT", api_url, headers=headers, data=payload)
+    }, cls=DateTimeEncoder)
+    response = requests.put(api_url, headers=headers, data=payload)
     if response.status_code != 200:
         print(f"Failed to send data to {stream_name}. Status code: {response.status_code}, Response: {response.text}")
     else:
@@ -59,8 +59,6 @@ def run_infinite_post_data_loop():
     pin_stream = f"streaming-{user_id}-pin"
     geo_stream = f"streaming-{user_id}-geo"
     user_stream = f"streaming-{user_id}-user"
-
-
 
     while True:
         sleep(random.randrange(0, 2))
