@@ -1,19 +1,16 @@
 from airflow import DAG
 from airflow.providers.databricks.operators.databricks import DatabricksSubmitRunOperator, DatabricksRunNowOperator
-from datetime import datetime, timedelta 
+from datetime import datetime, timedelta
 
-
-#Define params for Submit Run Operator
+# Define params for Submit Run Operator
 notebook_task = {
-    'notebook_path': '/Users/imobass000@gmail.com/DataCleaning'
+    'notebook_path': '/Users/imobass000@gmail.com/DataCleaning',
 }
 
-
-#Define params for Run Now Operator
+# Define params for Run Now Operator
 notebook_params = {
-    "Variable":5
+    "Variable": 5
 }
-
 
 default_args = {
     'owner': '126a38c82913',
@@ -24,22 +21,25 @@ default_args = {
     'retry_delay': timedelta(minutes=2)
 }
 
-
 with DAG('126a38c82913_dag',
-    # should be a datetime format
-    start_date=datetime(2024, 7, 16),
-    # check out possible intervals, should be a string
-    schedule_interval='@daily',
-    catchup=False,
-    default_args=default_args
-    ) as dag:
-
+         start_date=datetime(2024, 7, 16),
+         schedule_interval='@daily',
+         catchup=False,
+         default_args=default_args
+         ) as dag:
 
     opr_submit_run = DatabricksSubmitRunOperator(
-        task_id='submit_run',
-        # the connection we set-up previously
+        task_id='submit_run_data_cleaning',
         databricks_conn_id='databricks_default',
         existing_cluster_id='1108-162752-8okw8dgg',
         notebook_task=notebook_task
     )
-    opr_submit_run
+
+    opr_run_now = DatabricksRunNowOperator(
+        task_id='run_now_kinesis_stream',
+        databricks_conn_id='databricks_default',
+        job_id='your_databricks_job_id',
+        notebook_params=notebook_params
+    )
+
+    opr_submit_run >> opr_run_now
